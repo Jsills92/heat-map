@@ -6,6 +6,23 @@ const App = () => {
   const svgRef = useRef();
   const [data, setData] = useState(null);
 
+      // Remove any existing tooltip
+      d3.select("#tooltip").remove();
+
+      // Append tooltip outside the SVG, directly to the body
+      const tooltip = d3
+        .select("body")
+        .append("div")
+        .attr("id", "tooltip")
+        .style("position", "absolute")
+        .style("visibility", "hidden")
+        .style("background-color", "#222831")
+        .style("border-radius", "5px")
+        .style("padding", "10px")
+        .style("font-size", "12px")
+        .style("color", "#EEEEEE") // Adjust text color for better contrast
+        .style("z-index", "10"); // Make sure it's on top of other elements
+
   useEffect(() => {
     fetch(
       "https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/global-temperature.json"
@@ -25,22 +42,7 @@ const App = () => {
     const height = 800 - margin.top - margin.bottom;
     const baseTemperature = 8.66; // Define the base temperature
 
-    // Remove any existing tooltip
-    d3.select("#tooltip").remove();
 
-    // Append tooltip outside the SVG, directly to the body
-    const tooltip = d3
-      .select("body")
-      .append("div")
-      .attr("id", "tooltip")
-      .style("position", "absolute")
-      .style("visibility", "hidden")
-      .style("background-color", "#222831")
-      .style("border-radius", "5px")
-      .style("padding", "10px")
-      .style("font-size", "12px")
-      .style("color", "#EEEEEE") // Adjust text color for better contrast
-      .style("z-index", "10"); // Make sure it's on top of other elements
 
     const svg = d3
       .select(svgRef.current)
@@ -135,9 +137,10 @@ const App = () => {
       .style("fill", "#EEEEEE")
       .text("Monthly Global Land-Surface Temperature");
 
+      // Description
     svg
       .append("text")
-      .attr("id", "title")
+      .attr("id", "description")
       .attr("x", width / 2 + margin.left)
       .attr("y", height - 580)
       .attr("text-anchor", "middle")
@@ -166,13 +169,16 @@ const App = () => {
       .data(data.monthlyVariance)
       .enter()
       .append("rect")
-      .attr("id", "cell")
+      .attr("class", "cell")
       .attr("shape-rendering", "crispEdges") // Prevents stroke overlap
       .attr("x", (d) => xScale(d.year))
       .attr("y", (d) => yScale(d.month))
-      .attr("width", xScale(3) - xScale(0) - 5) // Set width of each cell
+      .attr("width", xScale(1) - xScale(0)) // Set width of each cell based on the scale
       .attr("height", yScale.bandwidth() - 1) // Set height of each cell
       .style("fill", (d) => colorScale(d.variance)) // Color based on the variance using the updated color scale
+      .attr("data-year", (d) => d.year) // Add data-year
+  .attr("data-month", (d) => d.month - 1) // Add data-month
+  .attr("data-temp", (d) => (8.66 + d.variance).toFixed(2)) // Add data-temp (calculated temperature)
       .on("mouseover", function (event, d) {
 
         const baseTemp = 8.66; // Base temperature
@@ -186,6 +192,7 @@ const App = () => {
         // Show the tooltip on mouseover
         tooltip
           .attr("data-year", d.year) // Set the data-year attribute for the tooltip
+          .attr("data-month", d.month)
           .style("visibility", "visible").html(`
             <strong>Temperature:</strong> ${actualTemp}°C<br>
             <strong>Year:</strong> ${d.year}<br>
@@ -252,7 +259,7 @@ legend
 .selectAll("text")
 .style("fill", "#EEEEEE") // White text
 .style("font-size", "12px");
-  }, [data]);
+  }, [data, tooltip]);
 
   return <svg ref={svgRef}></svg>;
 };
